@@ -1,0 +1,372 @@
+<html>
+<head>
+<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/><link rel="stylesheet" href="airconsole-controls/button/button.css">
+  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.3.0.js"></script>
+  <script type="text/javascript" src="airconsole-controls/dpad/dpad.js"></script>
+  <script type="text/javascript" src="airconsole-controls/button/button.js"></script>
+  <script type="text/javascript" src="airconsole-controls/rate-limiter/rate-limiter.js"></script>
+      <link rel="stylesheet" type="text/css" href="airconsole-controls/joystick/joystick.css">
+    <script type="text/javascript" src="airconsole-controls/joystick/joystick.js"></script>
+  <link rel="stylesheet" href="airconsole-controls/button/button.css">
+  <link rel="stylesheet" href="airconsole-controls/dpad/dpad.css">
+  <link href='https://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
+  <style type="text/css">
+    body {
+      -ms-user-select: none;
+      -moz-user-select: none;
+      -webkit-user-select: none;
+      user-select: none;
+      margin: 0px;
+      padding: 0px;  
+    }
+    .example-container {
+      position: relative;
+      text-align: center;
+      font-family: sans-serif;
+      display: inline-block;
+      width: 100%;
+      height: 100%;
+      max-width: 1000px;
+      max-height: 360px;
+    }
+ 
+    #joystick_left {
+      position: absolute;
+      width: 90%;
+      height: 45%;
+      top:  46%;
+      left: 5%;
+    }
+    #tiltDisplay {
+      position: absolute;
+      width: 70%;
+      height: 45%;
+      top:  46%;
+      left: 15%;
+    }
+    
+    
+      #button-ready {
+        position: absolute;
+     width: 80%;
+      height: 45%;
+      top:  50%;
+      left: 10%;
+      }
+      
+       #flame {
+       position: absolute;
+      width: 20%;
+      left: 0%;
+      display: inline-block;
+      
+      margin: 0px;
+      padding: 0px;
+      }
+      
+      #flame-container{
+        position: absolute;
+     width: 100%;
+      height: 30%;
+      top:  30%;
+      left: 0%;
+      align-items: center;
+          
+      margin: 0px;
+      padding: 0px;
+      }
+      
+       #playerIcon {
+       position: absolute;
+      width: 40%;
+      left: 30%;
+      top:  5%;
+      }
+      
+      #loadingImage {
+          width: 100%;
+      height: 100%;
+       background-image: url("webcontrol/loading.jpg");
+       background-size: auto 100%;
+       background-position: center;
+      }
+   
+    #controlSwitch {
+       width: 15%;
+       height: auto;
+       top:88%;
+       left:2%;
+       align-content: left;
+       position: absolute;
+      
+ 
+      }
+      
+       
+    
+     
+       #contentLoading{
+   position:absolute;
+   font-family: 'Press Start 2P', cursive;
+   color: black; 
+   font-size: 30px;
+   width: 95%;
+   top: 35%;
+   left:2.5% ;
+   text-align: center;
+   font-weight: 900;
+   line-height: 1.4;
+   
+  }
+   
+  </style>
+</head>
+
+<script type="text/javascript">
+var airconsole;
+var localControlType;
+var loading;
+var joystickOn=false;
+var dead;
+var tickCount=0;
+var my_player_number=0;
+var controlsMode=0;
+function onTimerTick() {
+
+if(loading){
+		tickCount++;
+		tickCount%=4;
+		var loadingText = "Loading";
+		for(var i=0; i<tickCount; i++){
+		loadingText+=".";
+		}
+          document.getElementById("contentLoading").innerHTML = loadingText; 
+      }
+    
+}
+
+	function init(){
+        SetLoadingVisible();
+        SetFlamesLit(0);
+	loading=true;
+    document.getElementById("contentLoading").innerHTML = "Loading"; 
+	//setInterval(onTimerTick, 333); // 33 milliseconds = ~ 30 frames per sec
+
+     
+    airconsole = new AirConsole({orientation: AirConsole.ORIENTATION_PORTRAIT, device_motion:100});
+    var rateLimiter = new RateLimiter(airconsole);
+       var joystick_left = new Joystick("joystick_left", {
+        "touchstart": function() {
+          rateLimiter.message(AirConsole.SCREEN, {
+            "joystick_left": {
+              touch: true
+            }
+          });
+        },
+        "touchmove": function(position) {
+          rateLimiter.message(AirConsole.SCREEN, {
+            "joystick_left": {
+              position: position
+            }
+          });
+        },
+        "touchend": function(had_direction) {
+          rateLimiter.message(AirConsole.SCREEN, {
+            "joystick_left": {
+              touch: false
+            }
+          });
+        }
+      });
+    var rectangularReady = new Button("button-ready", {
+        "down": function() {
+          airconsole.message(AirConsole.SCREEN, {"readyPressed" : "true"});
+        }
+      });  
+  
+  airconsole.onMessage = function(from, data) {
+        console.log("onMessage", from, data);
+        //document.getElementById("content").innerHTML = "device " + from + " says: " + data;
+        //document.getElementById("content").style.background = "#" + data;
+          my_player_number=0;
+       // if(airconsole!=null)my_player_number=airconsole.convertDeviceIdToPlayerNumber(airconsole.getDeviceId());
+        if(data["playerNum"]!=null){
+            document.getElementById("playerGod").src ="webcontrol/player" +data["playerNum"]+".png";
+            
+        }
+        if(data["joystickOn"]!=null){
+            SetJoystickVisible();  
+        }
+        if(data["newGame"]!=null){
+            SetNewGameButtonVisible();  
+        }
+        if(data["color"] !=null){	
+        	if(loading){
+        		document.getElementById("container").style.background = "radial-gradient(#ffffff 0%,#" + data["color"] + "  100%)";
+        	}
+        	loading=false;
+            
+            //SetNewGameButtonVisible();
+           //SetJoystickVisible();
+        	}
+        if(data["flameCount"] !=null){	
+            SetFlamesLit(data["flameCount"]);
+        	}
+        if(data["gameFull"] !=null){	
+        	document.getElementById("contentLoading").innerHTML = "Sorry,<br>this game only<br>supports 4 players"; 
+        	}			
+      };
+  airconsole.onDeviceMotion = function( data) {
+        //console.log("onMotion",  data);
+        if(!loading){
+        	airconsole.message(AirConsole.SCREEN, {
+            "tilt": 
+              data
+            	
+            });
+         }
+      }; 
+      
+  	
+      
+
+  
+  }
+  
+ 
+      
+   function SetLoadingVisible() {
+       joystickOn=false;
+	  	document.getElementById("containerReady").style.visibility = "hidden";
+	  	document.getElementById("containerJoystick").style.visibility = "hidden";
+	  	document.getElementById("tiltDisplay").style.visibility = "hidden";
+	  	document.getElementById("containerLoading").style.visibility = "hidden";
+	  	document.getElementById("loadingImage").style.visibility = "visible";
+	  	document.getElementById("backgroundImg").style.visibility = "hidden";
+	  	document.getElementById("playerGod").style.visibility = "hidden";
+        document.getElementById("controlSwitch").style.visibility = "hidden";
+	}   
+    
+    function SwitchControls(){
+        document.getElementById("controlSwitch").style.visibility = "visible";
+        switch(controlsMode) {
+
+            case 1: // turn on dpad
+                document.getElementById("containerJoystick").style.visibility = "visible";
+	           	document.getElementById("tiltDisplay").style.visibility = "hidden";
+                document.getElementById("controlimage").src="webcontrol/tilt-bg.png";
+                controlsMode=2;
+                break;
+            case 2: //turn on tilt
+                document.getElementById("containerJoystick").style.visibility = "hidden";
+	           	document.getElementById("tiltDisplay").style.visibility = "visible";
+                document.getElementById("controlimage").src="airconsole-controls/joystick/joystick-bg.png";
+
+                controlsMode=1;
+                break;
+            default: //set Default
+                document.getElementById("containerJoystick").style.visibility = "hidden";
+	           	document.getElementById("tiltDisplay").style.visibility = "visible";
+                document.getElementById("controlimage").src="airconsole-controls/joystick/joystick-bg.png";
+                controlsMode=1;
+                break;
+        }
+        if( controlsMode==1){
+        
+        }
+        
+    } 
+   function SetJoystickVisible() {
+       joystickOn=true;
+	  	document.getElementById("containerReady").style.visibility = "hidden";
+	  //	document.getElementById("containerJoystick").style.visibility = "visible";
+	  //	document.getElementById("tiltDisplay").style.visibility = "hidden";
+	  	document.getElementById("containerLoading").style.visibility = "hidden";
+	  	document.getElementById("loadingImage").style.visibility = "hidden";
+	  	document.getElementById("backgroundImg").style.visibility = "visible";
+	  	document.getElementById("playerGod").style.visibility = "visible";
+       SwitchControls();   
+	}    
+   function SetNewGameButtonVisible() {
+       joystickOn=false;
+       if (my_player_number==0){
+	  	document.getElementById("containerReady").style.visibility = "visible";
+	  	document.getElementById("containerJoystick").style.visibility = "hidden";
+	  	document.getElementById("tiltDisplay").style.visibility = "hidden";
+	  	document.getElementById("containerLoading").style.visibility = "hidden";
+	  	document.getElementById("loadingImage").style.visibility = "hidden";
+	  	document.getElementById("backgroundImg").style.visibility = "visible";
+	  	document.getElementById("playerGod").style.visibility = "visible";
+       }else{
+           	document.getElementById("contentLoading").innerHTML = "Waiting for player 1 to start the game"; 
+        	document.getElementById("containerReady").style.visibility = "hidden";
+	  	document.getElementById("containerJoystick").style.visibility = "hidden";
+	  	document.getElementById("containerLoading").style.visibility = "hidden";   
+	  	document.getElementById("tiltDisplay").style.visibility = "hidden";
+	  	document.getElementById("backgroundImg").style.visibility = "visible";
+	  	document.getElementById("loadingImage").style.visibility = "hidden";
+       }
+        //SetLoadingVisible();
+       
+	} 
+    function SetFlamesLit( num){
+        for (i = 0; i < 5; i++) { 
+            if(num>i) document.getElementById("flame"+i).style.visibility = "visible";  
+            else document.getElementById("flame"+i).style.visibility = "hidden";  
+        }
+    }
+
+  
+
+</script>
+
+<body id="container"  onload="init()">
+
+
+<div id=backgroundImg  style="z-index:-2; position:absolute; float:left; width:100%; height:100%; background-image: url('webcontrol/background_phone.png');"></div> 
+<div class="example-container1" id="containerJoystick">
+  
+   <div id="joystick_left" class="joystick">
+        <div class="joystick-relative">
+          <div class="joystick-relative-stick"></div>
+        </div>
+      </div>
+  
+  
+</div>
+
+
+<div id=flame-container>
+    <img src="webcontrol/flame.png" style=" width: 19%; display: inline-block; margin:0px; top:30%;" id="flame0" >
+    <img src="webcontrol/flame.png" style=" width: 19%; display: inline-block; margin:0px; top:30%;" id="flame1" >
+    <img src="webcontrol/flame.png" style=" width: 19%; display: inline-block; margin:0px; top:30%;" id="flame2" >
+    <img src="webcontrol/flame.png" style=" width: 19%; display: inline-block; margin:0px; top:30%;" id="flame3" >
+    <img src="webcontrol/flame.png" style=" width: 19%; display: inline-block; margin:0px; top:30%;" id="flame4" >
+</div>
+
+<div id=playerIcon>
+    <img src="webcontrol/player1.png" style=" width: 100%; margin:0px; " id="playerGod" >
+</div> 
+<div id=tiltDisplay>
+    <img src="webcontrol/tilt-bg.png"  style=" width: 100%;" >
+</div> 
+<div id=controlSwitch>
+    <img id="controlimage" src="webcontrol/tilt-bg.png"  style=" width: 100%;"  onclick="SwitchControls()">
+</div> 
+   <div id=loadingImage>
+</div>
+<div class="example-container5" id="containerReady" >
+  <div id=button-ready class=button-300-150>
+  </div>
+  
+   
+</div>
+
+ 
+ 
+ <div class="example-container4" id="containerLoading" >
+  
+<div id="contentLoading"><!--Incoming messages get displayed in this container--></div>
+ </div> 
+
+</body></html>
